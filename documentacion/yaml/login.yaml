@@ -1,0 +1,313 @@
+openapi: 3.0.3
+info:
+  title: Swagger - OpenAPI 3.0
+  description: |-
+    Esto es un servidor de muestra basado en la especificación OpenAPI 3.0.
+    Puede obtener más información sobre Swagger en https://swagger.io.
+
+    Algunos enlaces de la aplicación:
+    - [Api Rest](http://127.0.0.1:8000)
+  contact:
+    email: anthonyca18m@gmail.com
+  version: 1.0.11
+
+servers:
+  - url: http://127.0.0.1:8000/api/v1
+
+paths:
+  /auth/iniciar-sesion:
+    post:
+      tags:
+        - Auth
+      summary: Inicio de sesión en el sistema.
+      description: >
+        Valida la cuenta del usuario, permite solo una sesión activa y elimina
+        los tokens anteriores al iniciar sesión.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                correo:
+                  type: string
+                  description: Correo del usuario.
+                  example: 'usuario@dominio.com'
+                contrasena:
+                  type: string
+                  description: Contraseña del usuario.
+                  example: 'contrasena1'
+      responses:
+        "200":
+          description: Operación exitosa
+          headers:
+            Host:
+              $ref: '#components/schemas/HostDefault'
+            X-Powered-By:
+              description: Versión de lenguaje en cual se esta corriendo el API.
+              schema:
+                type: string
+            X-Rate-Limit:
+              description: Solicitudes permitidas por usuario.
+              schema:
+                type: integer
+                format: int32
+            Content-Type:
+                description: El tipo de contenido que la API que retorna.
+                schema:
+                  type: string
+            Cache-Control:
+              description: Control de cache de la API.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: 
+                    type: object
+                    example: {
+                      usuario: {
+                          id: 1,
+                          tipo_usuarios_id:  1,
+                          nombre_completo: 'NOMBRE DEL USUARIO COMPLETO',
+                          tipo_documentos: '1',
+                          documento: '99999999',
+                          correo: 'usuario@dominio.com',
+                          accesos: '11111111-11111111-111111111',
+                          permisos: '1111111111111111111111',
+                          creado_el: '2024-01-01 00:00:00'
+                        },                    
+                      token: 'sedf3256448e4f684w4268344$FGsrfwe654rw'
+                    }
+                  estado: 
+                    type: integer
+                    example: 200
+                  mensaje: 
+                    type: string
+                    example: 'Respuesta procesada correctamente.'
+        "422":
+          $ref: "#/components/responses/BodyNotProccessed"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /auth/cerrar-sesion:
+    get:
+      tags:
+        - Auth
+      summary: Cerrar sesión del sistema.
+      description: Finaliza la sesión del usuario actual.
+      responses:
+        default:
+          description: Operación exitosa.
+
+  /auth/cambiar-contrasena:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Auth
+      summary: Cambiar contraseña de usuario.
+      description: >
+        Al cambiar la contraseña, se invalidan las sesiones activas y se requiere
+        iniciar sesión nuevamente.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                usuarios_id:
+                  type: integer
+                contrasena:
+                  type: string
+                  example: 'MiContra01#'
+                recontrasena:
+                  type: string
+                  example: 'MiContra01#'
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessWithBodyDefault"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "422":
+          $ref: "#/components/responses/BodyNotProccessed"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /auth/obtener-codigo:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Auth
+      summary: Obtener código de recuperación de contraseña.
+      description: >
+        Envía un correo con un código de recuperación para restablecer la contraseña de la cuenta.
+      parameters:
+        - name: correo
+          in: query
+          description: Correo electrónico del usuario.
+          required: true
+          schema:
+            type: string
+            format: email
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessWithBodyDefault"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "422":
+          $ref: "#/components/responses/BodyNotProccessed"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /auth/recuperar-contrasena:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Auth
+      summary: Recuperar contraseña olvidada.
+      description: >
+        Permite cambiar la contraseña mediante un código de verificación
+        previamente enviado al correo del usuario.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                correo:
+                  type: string
+                  example: 'usuario@dominio.com'
+                codigo:
+                  type: string
+                  example: 'fg43436'
+                contrasena:
+                  type: string
+                  example: 'MiContra01#'
+                recontrasena:
+                  type: string
+                  example: 'MiContra01#'
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessWithBodyDefault"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "422":
+          $ref: "#/components/responses/BodyNotProccessed"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      description: Token de sesión para realizar operaciones dentro de la aplicación.
+      type: http
+      scheme: bearer
+  
+  schemas:
+    HostDefault:
+      description: El host donde se encuentra la API.
+      type: string
+    AuthorizationDefault:
+      description: El token del usuario en sesión (Bearer token).
+      type: string
+    XPoweredByDefault:
+      description: Versión de lenguaje en cual se esta corriendo el API.
+      type: string
+    XRateLimitDefault:
+      description: Solicitudes permitidas por usuario.
+      type: integer
+      format: int32
+    ContentTypeDefault:
+      description: El tipo de contenido que la API que retorna.
+      type: string
+    CacheControlDefault:
+      description: Control de cache de la API.
+      type: string
+
+  responses:
+    BodyNotProccessed:
+      description: Formato incorrecto o datos faltantes en la solicitud.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              errores:
+                type: array
+              estado:
+                type: integer
+                example: 422
+              mensaje:
+                type: string
+                example: 'No es posible procesar los datos enviados.'
+
+    UnauthorizedError:
+      description: Token de acceso inválido.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: 'Token inválido'
+
+    ServerError:
+      description: Error interno del servidor.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              estado:
+                type: integer
+                example: 500
+              mensaje:
+                type: string
+                example: 'No es posible conectarse al servidor.'
+
+    SuccessWithBodyDefault:
+      description: Operación exitosa.
+      headers:
+        Host:
+          description: Servidor que procesó la solicitud.
+          schema:
+            type: string
+        X-Powered-By:
+          description: Versión del lenguaje backend.
+          schema:
+            type: string
+        X-Rate-Limit:
+          description: Límite de solicitudes por usuario.
+          schema:
+            type: integer
+            format: int32
+        Content-Type:
+          description: Tipo de contenido de la respuesta.
+          schema:
+            type: string
+        Cache-Control:
+          description: Control de caché de la API.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+              estado:
+                type: integer
+                example: 200
+              mensaje:
+                type: string
+                example: 'Respuesta procesada correctamente.'
